@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="512" height="512" role="img" aria-label="CoeOS">
+  <title>CoeOS</title>
+
+  <!-- Tuile : le bleu CoeOS, coins arrondis comme l'icone d'origine -->
+  <rect x="3" y="3" width="114" height="114" rx="26" fill="#58badd"/>
+  <rect x="3" y="3" width="114" height="114" rx="26" fill="none" stroke="#32353a" stroke-width="3"/>
+
+  <!-- Labyrinthe : murs blancs. Anneaux concentriques, ouvertures alternees.
+       Anneau exterieur ouvert en haut ET en bas = les deux sorties. -->
+  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+
+    <!-- Anneau 1 (h=42) : breches haut et bas, sur l'axe vertical -->
+    <path d="M51 18 H18 V102 H51"/>
+    <path d="M69 18 H102 V102 H69"/>
+
+    <!-- Anneau 2 (h=31) : breches gauche et droite -->
+    <path d="M29 51 V29 H91 V51"/>
+    <path d="M29 69 V91 H91 V69"/>
+
+    <!-- Anneau 3 (h=20) : breches haut et bas -->
+    <path d="M53 40 H40 V80 H53"/>
+    <path d="M67 40 H80 V80 H67"/>
+  </g>
+
+  <!-- Coeur du labyrinthe -->
+  <rect x="55" y="55" width="10" height="10" rx="2" fill="#214c6f"/>
+</svg>

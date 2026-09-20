@@ -1,0 +1,8 @@
+.venv/
+.git/
+legacy/
+tests/
+data/
+**/__pycache__/
+*.pyc
+.DS_Store

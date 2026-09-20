@@ -1,0 +1,24 @@
+services:
+  coeos-box:
+    image: ${COEOS_IMAGE:-coeos-box:local}
+    build: .
+    container_name: coeos-box
+    ports:
+      - "4600:4600"
+      # Plan de controle : un client agent lit l'affectation des roles ici.
+      - "4800:4800"
+    environment:
+      # Les cles BYOK se saisissent au dashboard (stockees chiffrees sur le
+      # volume). Cette variable reste un raccourci d'amorcage.
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      # Cle admin d'amorcage ; ensuite les tokens ck_ par user prennent le relais.
+      - COEOS_API_KEY=${COEOS_API_KEY:-}
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:4600/health').read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

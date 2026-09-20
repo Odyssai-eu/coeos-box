@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoeOS box</title>
+<link rel="icon" href="/dashboard/images/theseus.svg">
+<link rel="apple-touch-icon" href="/dashboard/images/theseus.png">
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #30363d; --text: #e6edf3;
+    --muted: #8b949e; --accent: #58a6ff; --ok: #3fb950; --warn: #d29922;
+    --err: #f85149; --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
+  .brand { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .logo-img { width: 96px; height: 96px; border-radius: 10px; flex: 0 0 auto; }
+  .brand-txt { flex: 1 1 340px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .brand-title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .brand-title h1 { margin: 0; }
+  .ep-link { flex: 0 0 auto; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: .5px; }
+  h1 .se { color: var(--accent); }
+  .sub { color: var(--muted); font-size: 13px; }
+  h2 { font-size: 15px; margin: 28px 0 10px; color: var(--text);
+       border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .panel { background: var(--panel); border: 1px solid var(--border);
+           border-radius: 8px; padding: 14px 16px; }
+  .badge { display: inline-block; padding: 1px 9px; border-radius: 10px;
+           font-size: 12px; border: 1px solid var(--border); }
+  .badge.ok { color: var(--ok); border-color: var(--ok); }
+  .badge.off { color: var(--muted); }
+  label { color: var(--muted); font-size: 12px; display: block; margin: 8px 0 3px; }
+  input[type=text], input[type=password], textarea, select {
+    width: 100%; background: var(--bg); color: var(--text); padding: 6px 9px;
+    border: 1px solid var(--border); border-radius: 6px; font-family: var(--mono);
+    font-size: 13px; }
+  textarea { resize: vertical; min-height: 90px; }
+  button { background: #21262d; color: var(--text); border: 1px solid var(--border);
+           border-radius: 6px; padding: 6px 13px; cursor: pointer; font-size: 13px; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: #1f6feb; border-color: #1f6feb; }
+  button.ok { background: #238636; border-color: #238636; }
+  .row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .mono { font-family: var(--mono); font-size: 12.5px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 12px; }
+  .msg { font-size: 12.5px; margin-left: 8px; }
+  .msg.ok { color: var(--ok); } .msg.err { color: var(--err); }
+  a { color: var(--accent); text-decoration: none; }
+  .footer { margin-top: 36px; color: var(--muted); font-size: 12px;
+            border-top: 1px solid var(--border); padding-top: 14px; }
+  .pill { font-family: var(--mono); font-size: 12px; background: var(--bg);
+          border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; }
+  .army { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .unit { font-family: var(--mono); font-size: 13px; background: var(--bg);
+          border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; }
+  .update { background: rgba(88,166,255,.08); border: 1px solid var(--accent);
+            border-radius: 8px; padding: 12px 15px; margin-bottom: 14px;
+            display: none; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .update.on { display: flex; }
+  /* Onglets — meme grammaire que la console superagent (.39:4800). Le volet
+     s'appelle .pane et NON .panel : .panel est deja la carte de cette page. */
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 20px 0 0;
+          border-bottom: 1px solid var(--border); }
+  .tab { background: transparent; color: var(--muted); border: 1px solid transparent;
+         border-bottom: none; border-radius: 8px 8px 0 0; padding: 9px 16px;
+         cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: -1px; }
+  .tab:hover { color: var(--text); border-color: transparent; }
+  .tab.active { color: var(--text); background: var(--panel); border-color: var(--border);
+                border-bottom: 1px solid var(--panel); }
+  .pane[hidden] { display: none; }
+  .pane > h2:first-child { margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <img src="/dashboard/images/theseus.svg" alt="CoeOS" class="logo-img">
+    <div class="brand-txt">
+      <div class="brand-title">
+        <h1>CoeOS <span class="se">box</span></h1>
+        <span class="sub" id="health">…</span>
+      </div>
+      <span class="sub">One endpoint, two wire protocols (OpenAI + Anthropic). Every
+        request routed to the model proven best on that skill — per the TMB benchmarks.
+        Call it with <span class="pill">model: "CoeOS"</span></span>
+    </div>
+    <a href="/endpoints" class="ep-link"><button>Endpoints — client setup</button></a>
+  </div>
+
+  <div class="update" id="updateBanner">
+    <strong>New TMB Settings available</strong>
+    <span class="sub" id="updateInfo"></span>
+    <span style="flex:1"></span>
+    <button class="ok" onclick="applyUpdate()">Update now</button>
+    <span class="msg" id="updateMsg"></span>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="router">Router</button>
+    <button class="tab" data-tab="settings">Settings</button>
+    <button class="tab" data-tab="keys">API Keys</button>
+    <button class="tab" data-tab="usage">Usage</button>
+    <button class="tab" data-tab="army">Army</button>
+    <button class="tab" data-tab="logs">Logs</button>
+  </nav>
+
+  <div class="pane" data-pane="router">
+  <h2>Providers</h2>
+  <div class="panel">
+    <table id="providers"><tr><td class="muted">loading…</td></tr></table>
+    <div class="row">
+      <button onclick="addProviderRow()">Add a provider</button>
+      <span class="msg" id="providersMsg"></span>
+    </div>
+    <div class="sub small" style="margin-top:8px">Anything that speaks the OpenAI
+      API: a cloud gateway, or a machine on your own network. A local endpoint
+      needs no key — and nothing leaves your network when an axis routes to it.</div>
+  </div>
+
+  <h2>Routing table</h2>
+  <div class="panel">
+    <div class="row" style="margin-top:0">
+      <label style="margin:0"><input type="checkbox" id="enabled" onchange="toggleEnabled()"> router enabled</label>
+      <span class="muted small" id="mappingMeta"></span>
+      <span style="flex:1"></span>
+      <button onclick="loadMapping()">Refresh</button>
+      <span class="msg" id="mappingMsg"></span>
+    </div>
+    <table id="mapping"><tr><td class="muted">loading…</td></tr></table>
+    <div class="sub small" id="mappingHint" style="margin-top:12px"></div>
+  </div>
+  </div>
+
+  <div class="pane" data-pane="settings" hidden>
+  <h2>TMB Settings</h2>
+  <div class="panel">
+    <div class="row" style="margin-top:0">
+      <span class="sub" id="settingsMeta">…</span>
+      <span style="flex:1"></span>
+      <select id="sharedPick" style="width:auto;min-width:180px"></select>
+      <button onclick="applyShared()">Load</button>
+      <button onclick="loadShared()">Refresh</button>
+      <button onclick="checkUpdate(true)">Check for updates</button>
+      <span class="msg" id="tmbFileMsg"></span>
+    </div>
+    <div class="sub small" style="margin-top:8px">Settings live in a public
+      settings repo (GitHub) and are pulled by this box. Loading one replaces the
+      routing table with the published version — your providers and their keys are
+      untouched.</div>
+  </div>
+
+  <h2>My configurations</h2>
+  <div class="panel">
+    <div class="sub small" style="margin-top:0;margin-bottom:8px">Named snapshots of
+      the active routing table, saved on this box (separate from the shared
+      eco/full settings above). Loading one <strong>replaces</strong> the active
+      table with exactly what was saved — providers and keys are untouched. Re-saving
+      the same name updates it.</div>
+    <div class="row" style="margin-top:0">
+      <input id="newConfigName" placeholder="name this configuration (e.g. my-setup)" style="flex:1">
+      <button onclick="saveConfig()">Save current</button>
+      <span class="msg" id="configsMsg"></span>
+    </div>
+    <table id="configs"><tr><td class="muted">loading…</td></tr></table>
+  </div>
+  </div>
+
+  <div class="pane" data-pane="keys" hidden>
+  <h2>API Keys</h2>
+  <div class="panel">
+    <label style="display:flex;gap:8px;align-items:center;cursor:pointer">
+      <input type="checkbox" id="authToggle" onchange="toggleAuth()">
+      <span>Require an API key (master switch — <code>/v1</code>, dashboard, key readback)</span>
+    </label>
+    <div class="sub small" style="margin:6px 0 12px">Off: the box is open — use only
+      on a trusted network.</div>
+
+    <h3 style="margin:12px 0 6px">Inference keys <span class="muted small">— for <code>/v1</code> calls</span></h3>
+    <table id="keysInference"><tr><td class="muted">loading…</td></tr></table>
+    <div class="row" style="margin-top:6px">
+      <input id="newInferenceName" placeholder="key name (e.g. theseus)" style="flex:1">
+      <button onclick="addKey('inference')">Add inference key</button>
+    </div>
+
+    <h3 style="margin:18px 0 6px">Settings keys <span class="muted small">— the subscription: access to <code>/settings</code></span></h3>
+    <label style="display:flex;gap:8px;align-items:center;cursor:pointer;margin-bottom:6px">
+      <input type="checkbox" id="settingsToggle" onchange="toggleSettingsAuth()">
+      <span>Require a settings key to pull settings (the paywall)</span>
+    </label>
+    <div class="sub small" style="margin:0 0 8px">Off: <code>/settings</code> is public.
+      On: a box must present an active settings key — suspend it to cut a client off.</div>
+    <table id="keysSettings"><tr><td class="muted">loading…</td></tr></table>
+    <div class="row" style="margin-top:6px">
+      <input id="newSettingsName" placeholder="client name (e.g. acme-corp)" style="flex:1">
+      <button onclick="addKey('settings')">Add settings key</button>
+    </div>
+    <span class="msg" id="keysMsg"></span>
+  </div>
+  </div>
+
+  <div class="pane" data-pane="usage" hidden>
+  <h2>Usage</h2>
+  <div class="panel">
+    <div class="row" style="margin-top:0">
+      <label style="margin:0">window</label>
+      <select id="usageDays" onchange="loadUsage()" style="width:auto;min-width:120px">
+        <option value="7">7 days</option>
+        <option value="30" selected>30 days</option>
+        <option value="90">90 days</option>
+      </select>
+      <span style="flex:1"></span>
+      <button onclick="loadUsage()">Refresh</button>
+      <span class="msg" id="usageMsg"></span>
+    </div>
+    <div class="army" id="usageTotals" style="margin-top:12px"></div>
+    <h3 style="margin:18px 0 6px">By axis</h3>
+    <table id="usageAxis"><tr><td class="muted">loading…</td></tr></table>
+    <h3 style="margin:18px 0 6px">By model</h3>
+    <table id="usageModel"><tr><td class="muted">loading…</td></tr></table>
+    <div class="sub small" style="margin-top:10px">Counted by this box as it routes:
+      calls, tokens and upstream cost. Your provider's own dashboard stays the
+      billing authority.</div>
+  </div>
+  </div>
+
+  <div class="pane" data-pane="army" hidden>
+  <h2>Army</h2>
+  <div class="panel">
+    <div class="row" style="margin-top:0">
+      <span class="sub" id="armyMeta">…</span>
+      <span style="flex:1"></span>
+      <button onclick="loadArmy()">Refresh</button>
+    </div>
+    <div class="army" id="armyList" style="margin-top:12px"></div>
+    <div class="sub small" style="margin-top:10px">The roster of models this box can
+      field, from the active setting's registry. Which axis routes where is in
+      Routing table.</div>
+  </div>
+  </div>
+
+  <div class="pane" data-pane="logs" hidden>
+  <h2>Requests routed</h2>
+  <div class="panel">
+    <table id="decisions"><tr><td class="muted">No routed requests yet.</td></tr></table>
+    <div class="row">
+      <button onclick="loadDecisions()">Refresh</button>
+      <button onclick="clearDecisions()">Clear</button>
+      <span class="msg" id="decisionsMsg"></span>
+    </div>
+  </div>
+  </div>
+
+  <div class="footer">
+    The CoeOS box is a benchmark-composed router: it classifies each request into a skill
+    axis and relays it to the model the TMB benchmarks prove best on that axis —
+    one call, cheaper and faster than multi-model fusion. This box runs on your
+    machine with your own keys: nothing leaves it but the call to your provider.
+    The routing table comes from a public settings repo and is kept fresh; you
+    always call a single model, <span class="pill">CoeOS</span>.
+  </div>
+</div>
+
+<script>
+function key() { return localStorage.getItem('coeos_admin_key') || ''; }
+async function api(path, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign({'content-type': 'application/json'},
+                               key() ? {'x-api-key': key()} : {}, opts.headers || {});
+  const r = await fetch(path, opts);
+  if (r.status === 401) {
+    const k = prompt('This server requires an API key (COEOS_API_KEY):');
+    if (k) { localStorage.setItem('coeos_admin_key', k); return api(path, opts); }
+  }
+  return r;
+}
+const esc = s => String(s ?? '').replace(/[&<>"]/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function flash(id, ok, text) {
+  const el = document.getElementById(id);
+  el.className = 'msg ' + (ok ? 'ok' : 'err');
+  el.textContent = text;
+  setTimeout(() => el.textContent = '', 5000);
+}
+
+async function loadHealth() {
+  const h = await (await api('/health')).json();
+  document.getElementById('health').textContent =
+    h.providers_ready && h.providers_ready.length ? 'online' : 'paste your key to start';
+  const sm = document.getElementById('settingsMeta');
+  if (sm) sm.textContent = (h.settings || '—') + ' · ' + (h.updated || '—')
+    + ' · ' + h.axes_bound + ' axes';
+}
+
+// ── Providers ──────────────────────────────────────────────────────────────
+// Le client declare ce qu'il veut : une passerelle cloud, une machine chez lui.
+// Un endpoint local n'a pas de cle — l'exiger rendrait le 100 % on-prem
+// impossible.
+let PROVIDERS = [];
+
+function providerRow(p) {
+  const id = esc(p.id);
+  return `<tr data-provider="${id}">
+    <td style="white-space:nowrap">
+      <b>${id}</b>
+      <div class="muted small">${p.builtin ? 'built-in' : 'custom'}</div>
+    </td>
+    <td><input type="text" data-f="api_base" placeholder="https://…" value="${esc(p.api_base || '')}"></td>
+    <td><input type="password" data-f="api_key" placeholder="${p.api_key_set ? '••••••••' : 'none'}" value=""></td>
+    <td style="white-space:nowrap">
+      <button onclick="saveProvider('${id}')">Save</button>
+      <button onclick="testProvider('${id}')">Test</button>
+      ${p.builtin ? '' : `<button onclick="deleteProvider('${id}')">Remove</button>`}
+      <div class="muted small" data-slot="status">${p.ready ? 'ready' : 'not configured'}</div>
+    </td></tr>`;
+}
+
+async function loadProviders() {
+  const d = await (await api('/admin/providers')).json();
+  PROVIDERS = (d.data || []).map(p => ({ ...p, builtin: !p.label_custom }));
+  document.getElementById('providers').innerHTML =
+    '<tr><th>Provider</th><th>URL</th><th>API key</th><th></th></tr>' +
+    PROVIDERS.map(providerRow).join('');
+}
+
+function rowValues(id) {
+  const tr = document.querySelector(`tr[data-provider="${id}"]`);
+  if (!tr) return {};
+  const out = {};
+  tr.querySelectorAll('input[data-f]').forEach(i => { out[i.dataset.f] = i.value });
+  return out;
+}
+
+function rowStatus(id, text) {
+  const el = document.querySelector(`tr[data-provider="${id}"] [data-slot="status"]`);
+  if (el) el.textContent = text;
+}
+
+async function saveProvider(id) {
+  const v = rowValues(id);
+  const body = { api_base: v.api_base || '' };
+  if ((v.api_key || '').trim()) body.api_key = v.api_key.trim();
+  const r = await api('/admin/providers/' + encodeURIComponent(id),
+                      { method: 'PUT', body: JSON.stringify(body) });
+  if (!r.ok) { flash('providersMsg', false, 'save failed'); return; }
+  flash('providersMsg', true, id + ' saved');
+  await loadProviders(); await loadHealth();
+}
+
+async function testProvider(id) {
+  rowStatus(id, 'testing…');
+  const r = await api('/admin/providers/' + encodeURIComponent(id) + '/test', { method: 'POST' });
+  const d = await r.json();
+  rowStatus(id, d.ok ? `${d.models_count} models` : (d.error || 'unreachable'));
+}
+
+async function deleteProvider(id) {
+  const r = await api('/admin/providers/' + encodeURIComponent(id), { method: 'DELETE' });
+  const d = await r.json();
+  if (!r.ok) { flash('providersMsg', false, (d.detail && d.detail.message) || 'failed'); return; }
+  const orphans = (d.orphaned_axes || []);
+  flash('providersMsg', true, orphans.length
+    ? `${id} removed — axes left unbound: ${orphans.join(', ')}`
+    : `${id} removed`);
+  await loadProviders(); await loadMapping(); await loadHealth();
+}
+
+function addProviderRow() {
+  const id = prompt('Provider id (letters, digits, - and _):');
+  if (!id) return;
+  const label = prompt('Display name:', id) || id;
+  const base = prompt('API base URL (…/v1):', 'https://') || '';
+  api('/admin/providers', { method: 'POST', body: JSON.stringify({ id, label, api_base: base }) })
+    .then(async (r) => {
+      const d = await r.json();
+      if (!r.ok) { flash('providersMsg', false, (d.detail && d.detail.message) || 'failed'); return; }
+      flash('providersMsg', true, id + ' added — paste its key if it needs one');
+      await loadProviders(); await loadHealth();
+    });
+}
+
+// ── Settings partages (catalogue du repo) ────────────────────────────────────────────
+// Ce que le master publie (eco, full, …). On les recupere puis on en charge un :
+// charger REMPLACE la table de routage, jamais les providers ni leurs cles.
+async function loadShared() {
+  const sel = document.getElementById('sharedPick');
+  const r = await api('/admin/settings/pull', { method: 'POST' });
+  const d = await r.json();
+  if (!r.ok) {
+    sel.innerHTML = '<option value="">— none published —</option>';
+    flash('tmbFileMsg', false, (d.detail && d.detail.message) || 'master unreachable');
+  }
+  const cat = await (await api('/admin/settings')).json();
+  const names = (cat.catalog || []).map(c => c.name);
+  sel.innerHTML = names.length
+    ? names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('')
+    : '<option value="">— none published —</option>';
+  if (r.ok) flash('tmbFileMsg', true, `${names.length} shared settings`);
+}
+
+async function applyShared() {
+  const name = document.getElementById('sharedPick').value;
+  if (!name) { flash('tmbFileMsg', false, 'nothing to load'); return; }
+  const r = await api('/admin/settings/load/' + encodeURIComponent(name), { method: 'POST' });
+  const d = await r.json();
+  if (!r.ok) { flash('tmbFileMsg', false, (d.detail && d.detail.message) || 'failed'); return; }
+  flash('tmbFileMsg', true, `loaded “${name}”`);
+  await loadMapping(); await loadHealth(); await checkUpdate(false);
+}
+
+// ── Mes configurations (snapshots perso : save / load / delete) ─────────────
+// Distinct du catalogue partage (eco/full) : sauvegardes locales de la table de
+// routage active. Charger REMPLACE l'actif par le snapshot entier ; les noms
+// sont assainis cote serveur ([\w.-]) donc surs en onclick.
+async function loadConfigs() {
+  const r = await api('/admin/coeos/configs'); if (!r.ok) return;
+  const names = (await r.json()).configs || [];
+  document.getElementById('configs').innerHTML = names.length
+    ? '<tr><th>Name</th><th></th></tr>' + names.map(n =>
+        `<tr><td>${esc(n)}</td><td style="text-align:right">`
+        + `<button onclick="applyConfig('${n}')">Load</button> `
+        + `<button onclick="delConfig('${n}')">Delete</button></td></tr>`).join('')
+    : '<tr><td class="muted">No saved configurations yet.</td></tr>';
+}
+async function saveConfig() {
+  const el = document.getElementById('newConfigName');
+  const name = el.value.trim();
+  if (!name) { flash('configsMsg', false, 'name required'); return; }
+  const r = await api('/admin/coeos/configs/save', {method:'POST', body: JSON.stringify({name})});
+  const d = await r.json();
+  if (r.ok) { el.value = ''; flash('configsMsg', true, `saved “${d.name}”`); loadConfigs(); }
+  else flash('configsMsg', false, (d.detail && d.detail.message) || 'failed');
+}
+async function applyConfig(name) {
+  if (!confirm(`Load “${name}”? This replaces the active routing table.`)) return;
+  const r = await api('/admin/coeos/configs/load', {method:'POST', body: JSON.stringify({name})});
+  const d = await r.json();
+  if (!r.ok) { flash('configsMsg', false, (d.detail && d.detail.message) || 'failed'); return; }
+  flash('configsMsg', true, `loaded “${name}”`);
+  await loadMapping(); await loadHealth();
+}
+async function delConfig(name) {
+  if (!confirm(`Delete “${name}”? Permanent.`)) return;
+  const r = await api('/admin/coeos/configs/' + encodeURIComponent(name), {method:'DELETE'});
+  flash('configsMsg', r.ok, r.ok ? 'deleted' : 'failed'); loadConfigs();
+}
+
+// ── Routing table ──────────────────────────────────────────────────────────
+// Un axe, un modele. Le picker est peuple par ce que les providers publient :
+// sans ca, un client ne peut pas definir son setting, donc le setting n'existe
+// pas pour lui.
+let CATALOG = [];
+
+async function loadModelCatalog() {
+  const d = await (await api('/admin/models')).json();
+  CATALOG = (d.providers || []).filter(p => (p.models || []).length);
+}
+
+function axisOptions(a) {
+  const opts = ['<option value="">— none —</option>'];
+  for (const p of CATALOG) {
+    opts.push(`<optgroup label="${esc(p.provider)}">`);
+    for (const m of p.models) {
+      const sel = (a.model === m && (!a.provider || a.provider === p.provider)) ? ' selected' : '';
+      opts.push(`<option value="${esc(p.provider)}|${esc(m)}"${sel}>${esc(m)}</option>`);
+    }
+    opts.push('</optgroup>');
+  }
+  // Le modele courant vient peut-etre d'un provider injoignable : on ne le perd pas.
+  if (a.model && !CATALOG.some(p => (p.models || []).includes(a.model))) {
+    opts.splice(1, 0, `<option value="${esc(a.provider || '')}|${esc(a.model)}" selected>${esc(a.model)} (current)</option>`);
+  }
+  return opts.join('');
+}
+
+async function loadMapping() {
+  await loadModelCatalog();
+  const d = await (await api('/admin/mapping')).json();
+  const n = (d.axes || []).filter(a => a.bound).length;
+  document.getElementById('mappingMeta').textContent =
+    `${n}/${(d.axes || []).length} axes bound · ${esc(d.settings || '')}`;
+  document.getElementById('mapping').innerHTML =
+    '<tr><th>Axis</th><th>Provider</th><th>Model</th></tr>' +
+    (d.axes || []).map(a => `<tr>
+      <td style="white-space:nowrap"><b>${esc(a.label)}</b>
+        <div class="muted small">${esc(a.key)}</div></td>
+      <td class="muted small" style="white-space:nowrap">${esc(a.provider || '—')}</td>
+      <td><select onchange="setAxis('${esc(a.key)}', this.value)">${axisOptions(a)}</select>
+        ${a.suggested ? `<div class="muted small">suggested: <a href="#" onclick="setAxis('${esc(a.key)}','|${esc(a.suggested)}');return false">${esc(a.suggested)}</a></div>` : ''}
+        ${a.description ? `<div class="muted small">${esc(a.description)}</div>` : ''}
+      </td></tr>`).join('') || '<tr><td class="muted">No axes configured.</td></tr>';
+  document.getElementById('mappingHint').textContent = CATALOG.length
+    ? 'Pick the model each skill routes to. Models come from the providers above.'
+    : 'No provider reachable yet — add one above, then Test it.';
+}
+
+async function setAxis(key, value) {
+  const [provider, model] = (value || '|').split('|');
+  const r = await api('/admin/mapping/axis/' + encodeURIComponent(key),
+                      { method: 'PUT', body: JSON.stringify({ model: model || '', provider: provider || '' }) });
+  const d = await r.json();
+  if (!r.ok) { flash('mappingMsg', false, (d.detail && d.detail.message) || 'failed'); await loadMapping(); return; }
+  flash('mappingMsg', true, key + ' → ' + (d.axis && d.axis.model ? d.axis.model : 'none'));
+  await loadMapping(); await loadHealth();
+}
+
+async function toggleEnabled() {
+  const on = document.getElementById('enabled').checked;
+  await api('/admin/coeos', {method: 'PUT', body: JSON.stringify({enabled: on})}); loadMapping(); loadHealth();
+}
+
+async function checkUpdate(force) {
+  if (force) flash('tmbFileMsg', true, 'checking…');
+  const d = await (await api('/admin/settings-update' + (force ? '?check=true' : ''))).json();
+  const banner = document.getElementById('updateBanner');
+  banner.classList.toggle('on', !!d.available);
+  if (d.available) {
+    document.getElementById('updateInfo').textContent =
+      'local ' + (d.local_updated || '—') + ' → ' + (d.remote_updated || '—')
+      + (d.remote_name ? ' (' + d.remote_name + ')' : '');
+  }
+  if (force) flash('tmbFileMsg', !d.error,
+    d.error ? d.error : (d.available ? 'update available' : 'up to date'));
+}
+async function applyUpdate() {
+  flash('updateMsg', true, 'downloading…');
+  flash('tmbFileMsg', true, 'downloading…');
+  const r = await api('/admin/settings-update/apply', {method: 'POST'});
+  const d = await r.json();
+  const msg = r.ok ? ('updated → ' + d.updated) : (d.detail || 'failed');
+  flash('updateMsg', r.ok, msg);
+  flash('tmbFileMsg', r.ok, msg);
+  if (r.ok) { document.getElementById('updateBanner').classList.remove('on'); loadMapping(); loadHealth(); }
+}
+
+async function clearDecisions() {
+  const r = await api('/admin/coeos/decisions', {method: 'DELETE'});
+  flash('decisionsMsg', r.ok, r.ok ? 'cleared' : 'error');
+  loadDecisions();
+}
+async function loadDecisions() {
+  // Underground: show WHICH models got used, not the axis bindings.
+  const d = await (await api('/admin/coeos/decisions')).json();
+  const by = {};
+  for (const r of (d.decisions || [])) by[r.model] = (by[r.model] || 0) + r.count;
+  const rows = Object.entries(by).sort((a, b) => b[1] - a[1]);
+  document.getElementById('decisions').innerHTML = rows.length
+    ? '<tr><th>model</th><th>requests</th></tr>' +
+      rows.map(([m, c]) => `<tr><td class="mono">${esc(m)}</td><td>${c}</td></tr>`).join('')
+    : '<tr><td class="muted">No routed requests yet.</td></tr>';
+}
+
+loadHealth(); loadProviders(); loadMapping(); loadDecisions(); checkUpdate(false); loadShared(); loadKeys(); loadConfigs();
+
+function keyRow(k) {
+  const secret = k.secret
+    ? `<code class="mono" id="k_${k.prefix}">${esc(k.secret)}</code>`
+      + ` <button class="sm" onclick="copyKey('${k.prefix}')">Copy</button>`
+    : `<span class="muted">${esc(k.prefix)}… (legacy — not recoverable)</span>`;
+  const state = k.active
+    ? `<span class="ok">active</span>`
+    : `<span class="err">suspended</span>`;
+  const susBtn = k.active
+    ? `<button class="sm" onclick="setActive('${k.prefix}',false)">Suspend</button>`
+    : `<button class="sm" onclick="setActive('${k.prefix}',true)">Reactivate</button>`;
+  return `<tr><td>${esc(k.name) || '<span class="muted">unnamed</span>'}</td>`
+       + `<td>${secret}</td><td>${state}</td>`
+       + `<td class="small muted">${esc((k.created||'').slice(0,10))}</td>`
+       + `<td>${susBtn} <button class="sm" onclick="delKey('${k.prefix}')">Delete</button></td></tr>`;
+}
+async function loadKeys() {
+  const r = await api('/admin/keys'); if (!r.ok) return;
+  const d = await r.json();
+  document.getElementById('authToggle').checked = !!d.auth_enabled;
+  document.getElementById('settingsToggle').checked = !!d.settings_auth;
+  const head = '<tr><th>Name</th><th>Key</th><th>State</th><th>Created</th><th></th></tr>';
+  const inf = d.keys.filter(k => (k.kind||'inference') === 'inference');
+  const set = d.keys.filter(k => k.kind === 'settings');
+  document.getElementById('keysInference').innerHTML =
+    inf.length ? head + inf.map(keyRow).join('') : '<tr><td class="muted">No inference keys.</td></tr>';
+  document.getElementById('keysSettings').innerHTML =
+    set.length ? head + set.map(keyRow).join('') : '<tr><td class="muted">No settings keys.</td></tr>';
+}
+async function addKey(kind) {
+  const id = kind === 'settings' ? 'newSettingsName' : 'newInferenceName';
+  const name = document.getElementById(id).value.trim();
+  const r = await api('/admin/keys', {method:'POST', body: JSON.stringify({name, kind})});
+  if (r.ok) { document.getElementById(id).value=''; flash('keysMsg', true, 'Key created'); loadKeys(); }
+  else flash('keysMsg', false, 'Failed');
+}
+async function delKey(prefix) {
+  if (!confirm('Delete this key? Permanent — it stops working immediately.')) return;
+  const r = await api('/admin/keys/' + prefix, {method:'DELETE'});
+  flash('keysMsg', r.ok, r.ok ? 'Key deleted' : 'Failed'); loadKeys();
+}
+async function setActive(prefix, active) {
+  const r = await api('/admin/keys/' + prefix + '/active', {method:'PUT', body: JSON.stringify({active})});
+  flash('keysMsg', r.ok, active ? 'Key reactivated' : 'Key suspended'); loadKeys();
+}
+async function toggleAuth() {
+  const on = document.getElementById('authToggle').checked;
+  const r = await api('/admin/keys/auth', {method:'PUT', body: JSON.stringify({enabled:on})});
+  flash('keysMsg', r.ok, on ? 'API key now required' : 'Box is open — trusted network only');
+}
+async function toggleSettingsAuth() {
+  const on = document.getElementById('settingsToggle').checked;
+  const r = await api('/admin/keys/settings-auth', {method:'PUT', body: JSON.stringify({enabled:on})});
+  flash('keysMsg', r.ok, on ? 'Settings now require a key' : 'Settings are public');
+}
+// ── Usage (metering) ───────────────────────────────────────────────────────
+const fmtInt = n => Number(n || 0).toLocaleString('en-US');
+const fmtUsd = n => '$' + Number(n || 0).toFixed(2);
+
+async function loadUsage() {
+  const days = document.getElementById('usageDays').value;
+  const r = await api('/admin/usage?days=' + encodeURIComponent(days));
+  if (!r.ok) { flash('usageMsg', false, 'failed'); return; }
+  const d = await r.json();
+  const t = d.totals || {};
+  document.getElementById('usageTotals').innerHTML =
+    [['requests', fmtInt(t.requests)], ['tokens in', fmtInt(t.tokens_in)],
+     ['tokens out', fmtInt(t.tokens_out)], ['cost', fmtUsd(t.cost)]]
+    .map(([k, v]) => `<span class="unit">${k} <b>${esc(v)}</b></span>`).join('');
+  const table = (list, key) => list.length
+    ? `<tr><th>${esc(key)}</th><th>calls</th><th>tokens in</th><th>tokens out</th><th>cost</th></tr>`
+      + list.map(x => `<tr><td class="mono">${esc(x[key])}</td><td>${fmtInt(x.n)}</td>`
+        + `<td>${fmtInt(x.tin)}</td><td>${fmtInt(x.tout)}</td><td>${fmtUsd(x.cost)}</td></tr>`).join('')
+    : '<tr><td class="muted">No traffic in this window.</td></tr>';
+  document.getElementById('usageAxis').innerHTML = table(d.by_axis || [], 'axis');
+  document.getElementById('usageModel').innerHTML = table(d.by_model || [], 'model');
+}
+
+// ── Army (les modeles que cette box peut aligner) ──────────────────────────
+async function loadArmy() {
+  const r = await api('/admin/army'); if (!r.ok) return;
+  const d = await r.json();
+  const n = (d.army || []).length;
+  document.getElementById('armyMeta').textContent =
+    `${n} model${n === 1 ? '' : 's'} · setting “${d.settings || '—'}” · updated ${d.updated || '—'}`
+    + (d.enabled ? '' : ' · router disabled');
+  document.getElementById('armyList').innerHTML = n
+    ? d.army.map(m => `<span class="unit">${esc(m)}</span>`).join('')
+    : '<span class="muted">Empty roster.</span>';
+}
+
+// ── Onglets ────────────────────────────────────────────────────────────────
+// Usage et Army se chargent a la premiere ouverture de leur onglet, pas au boot :
+// inutile de compter des tokens que personne ne regarde.
+const TAB_LOADED = {};
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.pane').forEach(p => p.hidden = (p.dataset.pane !== name));
+  if (!TAB_LOADED[name]) {
+    TAB_LOADED[name] = true;
+    if (name === 'usage') loadUsage();
+    if (name === 'army') loadArmy();
+  }
+  try { history.replaceState(null, '', '#' + name); } catch (e) {}
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
+(function initTab() {
+  const want = (location.hash || '').slice(1);
+  if (/^[a-z]+$/.test(want) && document.querySelector('.tab[data-tab="' + want + '"]')) switchTab(want);
+})();
+
+function copyKey(prefix) {
+  const el = document.getElementById('k_' + prefix); if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(
+    () => flash('keysMsg', true, 'Copied'), () => flash('keysMsg', false, 'Copy blocked'));
+}
+</script>
+</body>
+</html>
